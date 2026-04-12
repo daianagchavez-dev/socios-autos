@@ -188,41 +188,25 @@ if st.session_state.data:
     df = pd.DataFrame(st.session_state.data)
     df['gastos_total'] = gastos_totals
 
-    # Tabla manual con botón 🗑️ como columna inline
-    COL_W = [2, 1.5, 1.2, 1, 1.2, 1.2, 1.5, 1.2, 1.2, 1.2, 1.2, 0.6]
-    header_cols = st.columns(COL_W)
-    headers = ['Auto', 'F. Compra', 'Compra', 'Gastos', 'Costo Total',
-               'Venta', 'F. Venta', 'Ganancia', 'Vos (30%)', 'Socio (70%)', 'Estado', '']
-    for hcol, htxt in zip(header_cols, headers):
-        hcol.markdown(f"<small><b>{htxt}</b></small>", unsafe_allow_html=True)
-    st.markdown("<hr style='margin:4px 0 8px 0'>", unsafe_allow_html=True)
+    # Tabla con colores por estado
+    display_cols = ['vehiculo', 'fecha_compra', 'compra', 'gastos_total', 'costo_total',
+                    'venta', 'fecha_venta', 'ganancia', 'tu_ganancia_30', 'socio_ganancia_70', 'status']
+    col_rename = {
+        'vehiculo': 'Auto', 'fecha_compra': 'F. Compra', 'compra': 'Compra',
+        'gastos_total': 'Gastos', 'costo_total': 'Costo Total', 'venta': 'Venta',
+        'fecha_venta': 'F. Venta', 'ganancia': 'Ganancia',
+        'tu_ganancia_30': 'Vos (30%)', 'socio_ganancia_70': 'Socio (70%)', 'status': 'Estado'
+    }
+    display_df = df[display_cols].rename(columns=col_rename).round(0)
 
-    for op in st.session_state.data:
-        gastos_t = get_gastos_total(op['gastos'])
-        if op['status'] == 'vendido':
-            estado_txt = "🟢 vendido" if op['ganancia'] >= 0 else "🔴 pérdida"
+    def color_row(row):
+        if row['Estado'] == 'vendido':
+            c = 'rgba(0,180,0,0.13)' if row['Ganancia'] >= 0 else 'rgba(200,0,0,0.18)'
         else:
-            estado_txt = "🟡 pendiente"
+            c = 'rgba(255,190,0,0.10)'
+        return [f'background-color: {c}'] * len(row)
 
-        row = st.columns(COL_W)
-        row[0].write(op['vehiculo'])
-        row[1].write(op.get('fecha_compra') or '—')
-        row[2].write(f"{simbolo}{op['compra']:,.0f}")
-        row[3].write(f"{simbolo}{gastos_t:,.0f}")
-        row[4].write(f"{simbolo}{op['costo_total']:,.0f}")
-        row[5].write(f"{simbolo}{op['venta']:,.0f}" if op['venta'] else '—')
-        row[6].write(op.get('fecha_venta') or '—')
-        row[7].write(f"{simbolo}{op['ganancia']:,.0f}" if op['status'] == 'vendido' else '—')
-        row[8].write(f"{simbolo}{op['tu_ganancia_30']:,.0f}" if op['status'] == 'vendido' else '—')
-        row[9].write(f"{simbolo}{op['socio_ganancia_70']:,.0f}" if op['status'] == 'vendido' else '—')
-        row[10].write(estado_txt)
-        if row[11].button("🗑️", key=f"del_row_{op['id']}"):
-            st.session_state.data = [o for o in st.session_state.data if o['id'] != op['id']]
-            for i, o in enumerate(st.session_state.data):
-                o['id'] = i + 1
-            save_data(st.session_state.data)
-            st.rerun()
-    st.markdown("<hr style='margin:8px 0 16px 0'>", unsafe_allow_html=True)
+    st.dataframe(display_df.style.apply(color_row, axis=1), use_container_width=True)
 
     cerradas = df[df['status'] == 'vendido']
     tu_ganancia = cerradas['tu_ganancia_30'].sum()
