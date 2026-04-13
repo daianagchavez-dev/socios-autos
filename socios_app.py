@@ -197,7 +197,7 @@ if st.session_state.data:
         'vehiculo': 'Auto', 'fecha_compra': 'F. Compra', 'compra': 'Compra',
         'gastos_total': 'Gastos', 'costo_total': 'Costo Total', 'venta': 'Venta',
         'fecha_venta': 'F. Venta', 'ganancia': 'Ganancia',
-        'tu_ganancia_30': 'Vos (30%)', 'socio_ganancia_70': 'Socio (70%)', 'status': 'Estado'
+        'tu_ganancia_30': 'Dai (30%)', 'socio_ganancia_70': 'Gus (70%)', 'status': 'Estado'
     }
     display_df = df[display_cols].rename(columns=col_rename).copy()
 
@@ -219,7 +219,8 @@ if st.session_state.data:
             c = 'rgba(255,190,0,0.10)'
         return [f'background-color: {c}'] * len(row)
 
-    st.dataframe(display_df.style.apply(color_row, axis=1), use_container_width=True)
+    fmt = {c: '{:,.2f}' for c in ['Compra', 'Gastos', 'Costo Total', 'Venta', 'Ganancia', 'Dai (30%)', 'Gus (70%)']}
+    st.dataframe(display_df.style.apply(color_row, axis=1).format(fmt, na_rep='—'), use_container_width=True)
 
     cerradas = [op for op in st.session_state.data if op['status'] == 'vendido']
     gan_daiana = sum(op['tu_ganancia_30'] for op in cerradas)
@@ -241,22 +242,22 @@ if st.session_state.data:
     rec_daiana = inversion_base + gast_daiana + gan_daiana
     rec_gustavo = inversion_base + gast_gustavo + gan_gustavo
 
-    st.markdown("""
-    <style>
-    div[data-testid="column"] { min-width: 45% !important; flex: 1 1 45% !important; }
-    </style>
-    """, unsafe_allow_html=True)
+    def card(icon, label, valor):
+        return f"""
+        <div style="flex:1 1 45%;min-width:130px;background:rgba(255,255,255,0.05);
+                    border-radius:10px;padding:16px 20px;">
+            <div style="font-size:0.8em;color:#aaa;margin-bottom:4px;">{icon} {label}</div>
+            <div style="font-size:1.6em;font-weight:bold;">{simbolo} {valor:,.0f}</div>
+        </div>"""
 
-    col1, col2 = st.columns(2)
-    col3, col4 = st.columns(2)
-    with col1:
-        st.metric("💵 Ganancia Daiana (30%)", f"{simbolo} {gan_daiana:,.0f}")
-    with col2:
-        st.metric("👥 Ganancia Gustavo (70%)", f"{simbolo} {gan_gustavo:,.0f}")
-    with col3:
-        st.metric("🔄 Recupero Daiana", f"{simbolo} {rec_daiana:,.0f}")
-    with col4:
-        st.metric("🔄 Recupero Gustavo", f"{simbolo} {rec_gustavo:,.0f}")
+    st.markdown(f"""
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin:16px 0;">
+        {card('💵','Ganancia Dai (30%)', gan_daiana)}
+        {card('👥','Ganancia Gus (70%)', gan_gustavo)}
+        {card('🔄','Recupero Daiana', rec_daiana)}
+        {card('🔄','Recupero Gustavo', rec_gustavo)}
+    </div>
+    """, unsafe_allow_html=True)
 
     # DETALLE GASTOS
     st.subheader("📋 Detalle Gastos")
