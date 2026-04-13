@@ -199,7 +199,18 @@ if st.session_state.data:
         'fecha_venta': 'F. Venta', 'ganancia': 'Ganancia',
         'tu_ganancia_30': 'Vos (30%)', 'socio_ganancia_70': 'Socio (70%)', 'status': 'Estado'
     }
-    display_df = df[display_cols].rename(columns=col_rename).round(0)
+    display_df = df[display_cols].rename(columns=col_rename).copy()
+
+    # Quitar hora de las fechas
+    for col_fecha in ['F. Compra', 'F. Venta']:
+        display_df[col_fecha] = display_df[col_fecha].apply(
+            lambda x: x.split(' ')[0] if isinstance(x, str) and x else '—'
+        )
+
+    # Formato numérico: 2 decimales
+    num_cols = ['Compra', 'Gastos', 'Costo Total', 'Venta', 'Ganancia', 'Vos (30%)', 'Socio (70%)']
+    for c in num_cols:
+        display_df[c] = pd.to_numeric(display_df[c], errors='coerce').round(2)
 
     def color_row(row):
         if row['Estado'] == 'vendido':
@@ -229,6 +240,12 @@ if st.session_state.data:
 
     rec_daiana = inversion_base + gast_daiana + gan_daiana
     rec_gustavo = inversion_base + gast_gustavo + gan_gustavo
+
+    st.markdown("""
+    <style>
+    div[data-testid="column"] { min-width: 45% !important; flex: 1 1 45% !important; }
+    </style>
+    """, unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
     col3, col4 = st.columns(2)
